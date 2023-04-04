@@ -26,7 +26,7 @@ const getAccountAttributes = async (accountId) => {
   return rest || {};
 };
 
-const updateAccountAttributes = async (accountId, attributes) => {
+const updateAccountAttributes = async (accountId, attributes, ids) => {
   const accountAttributes = await AccountUserAttributes.findOne({
     account_id: accountId,
   }).lean();
@@ -34,10 +34,15 @@ const updateAccountAttributes = async (accountId, attributes) => {
     return await createAccountAttributes({
       account_id: accountId,
       attributes,
+      attributesId: ids,
     });
   accountAttributes.attributes = {
     ...accountAttributes.attributes,
     ...attributes,
+  };
+  accountAttributes.attributesId = {
+    ...accountAttributes.attributesId,
+    ...ids,
   };
   const query = { account_id: accountId };
   const update = { ...accountAttributes };
@@ -62,7 +67,7 @@ const getUserAttributes = async (userId) => {
   return rest || {};
 };
 
-const updateUserAttributes = async (userId, accountId, attributes) => {
+const updateUserAttributes = async ({ userId, accountId, attributes, ids }) => {
   const userAttributes = await UserAttributes.findOne({
     user_id: userId,
   }).lean();
@@ -71,10 +76,15 @@ const updateUserAttributes = async (userId, accountId, attributes) => {
       user_id: userId,
       account_id: accountId,
       attributes,
+      attributesId: ids,
     });
   userAttributes.attributes = {
     ...userAttributes.attributes,
     ...attributes,
+  };
+  userAttributes.attributesId = {
+    ...userAttributes.attributesId,
+    ...ids,
   };
   const query = { user_id: userId };
   const update = { ...userAttributes };
@@ -95,19 +105,33 @@ async function parseUserAttributes(userAttributes) {
     let { name } = userAttribute;
     name = name.replace(/\./g, "_").toLowerCase();
     const accountAttributes = await getAccountAttributes(accountId);
-    await updateAccountAttributes(accountId, {
-      ...accountAttributes,
-      [name]: { ...rest, name },
-    });
+    await updateAccountAttributes(
+      accountId,
+      {
+        ...accountAttributes,
+        [name]: { ...rest, name },
+      },
+      {
+        [userAttribute.user_attribute_id]: name,
+      }
+    );
     console.log({ name, accountId });
     if (_.isEmpty(User_Attribute_Value)) continue;
     for (const attribute of User_Attribute_Value) {
       const attributes = await getUserAttributes(attribute.user_id);
       console.log({ name, userId: attribute.user_id });
-      await updateUserAttributes(attribute.user_id, accountId, {
-        ...attributes,
-        [name]: { ...attribute, name },
-      });
+      const data = {
+        userId: attribute.user_id,
+        accountId,
+        attributes: {
+          ...attributes,
+          [name]: { ...attribute, name },
+        },
+        ids: {
+          [attribute.user_attribute_value_id]: name,
+        },
+      };
+      await updateUserAttributes(data);
     }
   }
 }

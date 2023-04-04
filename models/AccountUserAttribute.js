@@ -21,6 +21,10 @@ const AccountSchema = new mongoose.Schema(
       type: Map,
       of: AttributesSchema,
     },
+    attributesId: {
+      type: Map,
+      of: String,
+    },
   },
   { timestamps: true }
 );

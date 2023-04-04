@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 
 const AttributesSchema = new mongoose.Schema(
   {
-    user_attribute_id: Number,
+    user_attribute_value_id: Number,
     name: String,
     value: String,
     cipher: String,
@@ -24,6 +24,10 @@ const UserSchema = new mongoose.Schema(
     attributes: {
       type: Map,
       of: AttributesSchema,
+    },
+    attributesId: {
+      type: Map,
+      of: String,
     },
   },
   { timestamps: true }
